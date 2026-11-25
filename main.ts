@@ -55,7 +55,7 @@
 // maintenance-window cron, and the zero rate limit — see CANDIDATES.md
 // for the pairwise tournament against the brief and the visible field.
 
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
@@ -74,4 +74,12 @@ if (LINE.includes('\n')) {
   throw new Error('line must be a single line, no newline inside the text');
 }
 
-writeFileSync(join(OUTPUT_DIR, 'entry.txt'), LINE);
+const outPath = join(OUTPUT_DIR, 'entry.txt');
+writeFileSync(outPath, LINE);
+
+// Verify the write round-trips exactly: the gate reads the file, not this
+// constant, so a partial write or an added newline must fail here, in the
+// open, instead of silently shipping an entry the scorer would refuse.
+if (readFileSync(outPath, 'utf8') !== LINE) {
+  throw new Error('entry.txt does not match the line exactly after writing');
+}
